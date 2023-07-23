@@ -2,14 +2,18 @@ using UnityEngine;
 
 public class RayTracingMaster : MonoBehaviour
 {
+    public int bounceLimit;
+    public int sphereDimensionRadius;
+
     public ComputeShader RayTracingShader;
     private RenderTexture _target;
 
     private Camera _camera;
-    public Texture SkyboxTexture;
+    public Texture _SkyboxTexture;
 
     private uint _currentSample = 0;
     private Material _addMaterial;
+
 
     private void Awake() {
         _camera = GetComponent<Camera>();
@@ -25,8 +29,10 @@ public class RayTracingMaster : MonoBehaviour
     private void SetShaderParameters() {
         RayTracingShader.SetMatrix("_CameraToWorld", _camera.cameraToWorldMatrix);
         RayTracingShader.SetMatrix("_CameraInverseProjection", _camera.projectionMatrix.inverse);
-        RayTracingShader.SetTexture(0, "_SkyboxTexture", SkyboxTexture);
+        RayTracingShader.SetTexture(0, "_SkyboxTexture", _SkyboxTexture);
         RayTracingShader.SetVector("_PixelOffset", new Vector2(Random.value, Random.value));
+        RayTracingShader.SetInt("_BounceLimit", bounceLimit);
+        RayTracingShader.SetInt("_SphereDimensionRadius", sphereDimensionRadius);
     }
 
     private void OnRenderImage(RenderTexture source, RenderTexture destination) {
