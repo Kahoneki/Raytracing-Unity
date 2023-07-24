@@ -1,9 +1,9 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class RayTracingMaster : MonoBehaviour
 {
     public int bounceLimit;
-    public int sphereDimensionRadius;
 
     public ComputeShader RayTracingShader;
     private RenderTexture _target;
@@ -15,6 +15,70 @@ public class RayTracingMaster : MonoBehaviour
     private Material _addMaterial;
 
     public Light _directionalLight;
+
+
+    struct Sphere {
+        public Vector3 position;
+        public float radius;
+        public Vector3 albedo;
+        public Vector3 specular;
+    };
+
+    private Vector2 SphereRadiusRange = new Vector2(3.0f, 8.0f);
+    private uint SpheresMax = 200;
+    private float SpherePlacementRadius = 50.0f;
+    private ComputeBuffer _sphereBuffer;
+
+
+    private void OnEnable() {
+        _currentSample = 0;
+        SetUpScene();
+    }
+
+
+    private void OnDisable() {
+        if (_sphereBuffer != null)
+            _sphereBuffer.Release();
+    }
+
+
+    private void SetUpScene() {
+        List<Sphere> spheres = new List<Sphere>();
+
+        //Add a number of random spheres
+        for (int i=0; i<SpheresMax; i++) {
+            Sphere sphere = new Sphere();
+
+            //Randomise sphere radius
+            sphere.radius = SphereRadiusRange.x + Random.value * (SphereRadiusRange.y - SphereRadiusRange.x);
+
+            //Randomise sphere pos
+            Vector2 randomPos = Random.insideUnitCircle * SpherePlacementRadius;
+            sphere.position = new Vector3(randomPos.x, sphere.radius, randomPos.y);
+
+            //Reject spheres that are intersecting others
+            foreach (Sphere other in spheres) {
+                float minDist = sphere.radius + other.radius;
+                if (Vector3.SqrMagnitude(sphere.position - other.position) < minDist * minDist)
+                    goto SkipSphere;
+            }
+
+            //Randomise sphere albedo and specular
+            Color colour = Random.ColorHSV();
+            bool metal = Random.value < 0.5f;
+            sphere.albedo = metal ? Vector3.zero : new Vector3(colour.r, colour.g, colour.b);
+            sphere.specular = metal ? new Vector3(colour.r, colour.g, colour.b) : Vector3.one * 0.04f;
+
+            spheres.Add(sphere);
+
+            SkipSphere:
+                continue;
+        }
+
+        //Assign compute buffer data
+        _sphereBuffer = new ComputeBuffer(spheres.Count, 40);
+        _sphereBuffer.SetData(spheres);
+    }
 
 
     private void Awake() {
@@ -35,9 +99,11 @@ public class RayTracingMaster : MonoBehaviour
         RayTracingShader.SetTexture(0, "_SkyboxTexture", _SkyboxTexture);
         RayTracingShader.SetVector("_PixelOffset", new Vector2(Random.value, Random.value));
         RayTracingShader.SetInt("_BounceLimit", bounceLimit);
-        RayTracingShader.SetInt("_SphereDimensionRadius", sphereDimensionRadius);
+        
         Vector3 localLightForward = _directionalLight.transform.forward;
         RayTracingShader.SetVector("_DirectionalLight", new Vector4(localLightForward.x, localLightForward.y, localLightForward.z, _directionalLight.intensity));
+
+        RayTracingShader.SetBuffer(0, "_Spheres", _sphereBuffer);
     }
 
     private void OnRenderImage(RenderTexture source, RenderTexture destination) {
