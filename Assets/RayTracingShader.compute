@@ -11,7 +11,10 @@ float2 _PixelOffset;
 int _BounceLimit;
 int _SphereDimensionRadius;
 
+float4 _DirectionalLight;
+
 static const float PI = 3.14159265f;
+
 
 struct Ray {
     float3 origin;
@@ -27,6 +30,7 @@ Ray CreateRay(float3 origin, float3 direction) {
     return ray;
 }
 
+
 struct RayHit {
     float3 position;
     float distance;
@@ -40,6 +44,7 @@ RayHit CreateRayHit() {
     hit.normal = float3(0.0f, 0.0f, 0.0f);
     return hit;
 }
+
 
 Ray CreateCameraRay(float2 uv) {
     //Transform the camera origin to world space
@@ -55,6 +60,7 @@ Ray CreateCameraRay(float2 uv) {
     return CreateRay(origin, direction);
 }
 
+
 void IntersectGroundPlane(Ray ray, inout RayHit bestHit) {
     //Calculate distance along the ray where the ground plane is intersected. Ground plane MUST be at y=0
     float t = -ray.origin.y / ray.direction.y;
@@ -64,6 +70,7 @@ void IntersectGroundPlane(Ray ray, inout RayHit bestHit) {
         bestHit.normal = float3(0,1,0);
     }
 }
+
 
 void IntersectSphere(Ray ray, inout RayHit bestHit, float4 sphere) {
     //Calculate distance along the ray where the sphere is intersected
@@ -82,16 +89,39 @@ void IntersectSphere(Ray ray, inout RayHit bestHit, float4 sphere) {
     }
 }
 
+
+RayHit Trace(Ray ray) {
+    RayHit bestHit = CreateRayHit();
+    IntersectGroundPlane(ray, bestHit);
+    
+    for (int x=-_SphereDimensionRadius; x<=_SphereDimensionRadius; x++)
+    for (int y=-_SphereDimensionRadius; y<=_SphereDimensionRadius; y++)
+        IntersectSphere(ray, bestHit, float4(x*3,1,y*3,1));
+    
+    return bestHit;
+}
+
+
 float3 Shade(inout Ray ray, RayHit hit) {
     if (hit.distance < 1.#INF) {
-        float3 specular = float3(0.6f, 0.6f, 0.6f);
+        float3 specular = float3(0.04f, 0.04f, 0.04f);
+        float3 albedo = float3(0.8f, 0.8f, 0.8f);
 
         //Reset the ray origin to hitpoint and offset by a small amount (to prevent intersection with the same object it just hit)
         ray.origin = hit.position + hit.normal * 0.001f;
         ray.direction = reflect(ray.direction, hit.normal);
         ray.energy *= specular;
 
-        return float3(0,0,0);
+        // Shadow test ray
+        bool shadow = false;
+        Ray shadowRay = CreateRay(hit.position + hit.normal * 0.001f, -1 * _DirectionalLight.xyz);
+        RayHit shadowHit = Trace(shadowRay);
+        if (shadowHit.distance != 1.#INF)
+            return float3(0, 0, 0);
+
+        //Return a diffuse-shaded colour
+        return saturate(dot(hit.normal, _DirectionalLight.xyz) * -1) * _DirectionalLight.w * albedo;
+        
     }
     else {
         //Erase the ray's energy - the sky doesn't reflect anything
@@ -105,16 +135,6 @@ float3 Shade(inout Ray ray, RayHit hit) {
     }
 }
 
-RayHit Trace(Ray ray) {
-    RayHit bestHit = CreateRayHit();
-    IntersectGroundPlane(ray, bestHit);
-    
-    for (int x=-_SphereDimensionRadius; x<=_SphereDimensionRadius; x++)
-    for (int y=-_SphereDimensionRadius; y<=_SphereDimensionRadius; y++)
-        IntersectSphere(ray, bestHit, float4(x*3,1,y*3,1));
-    
-    return bestHit;
-}
 
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)

@@ -14,15 +14,18 @@ public class RayTracingMaster : MonoBehaviour
     private uint _currentSample = 0;
     private Material _addMaterial;
 
+    public Light _directionalLight;
+
 
     private void Awake() {
         _camera = GetComponent<Camera>();
     }
 
     private void Update() {
-        if (transform.hasChanged) {
+        if (transform.hasChanged || _directionalLight.transform.hasChanged) {
             _currentSample = 0;
             transform.hasChanged = false;
+            _directionalLight.transform.hasChanged = false;
         }
     }
 
@@ -33,6 +36,8 @@ public class RayTracingMaster : MonoBehaviour
         RayTracingShader.SetVector("_PixelOffset", new Vector2(Random.value, Random.value));
         RayTracingShader.SetInt("_BounceLimit", bounceLimit);
         RayTracingShader.SetInt("_SphereDimensionRadius", sphereDimensionRadius);
+        Vector3 localLightForward = _directionalLight.transform.forward;
+        RayTracingShader.SetVector("_DirectionalLight", new Vector4(localLightForward.x, localLightForward.y, localLightForward.z, _directionalLight.intensity));
     }
 
     private void OnRenderImage(RenderTexture source, RenderTexture destination) {
