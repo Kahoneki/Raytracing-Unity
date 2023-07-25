@@ -16,6 +16,8 @@ public class RayTracingMaster : MonoBehaviour
 
     public Light _directionalLight;
 
+    private RenderTexture _converged;
+
 
     struct Sphere {
         public Vector3 position;
@@ -25,8 +27,8 @@ public class RayTracingMaster : MonoBehaviour
     };
 
     private Vector2 SphereRadiusRange = new Vector2(3.0f, 8.0f);
-    private uint SpheresMax = 200;
-    private float SpherePlacementRadius = 50.0f;
+    private uint SpheresMax = 20000;
+    private float SpherePlacementRadius = 500.0f;
     private ComputeBuffer _sphereBuffer;
 
 
@@ -127,7 +129,8 @@ public class RayTracingMaster : MonoBehaviour
         int threadGroupsY = Mathf.CeilToInt(Screen.height / 8.0f);
         RayTracingShader.Dispatch(0, threadGroupsX, threadGroupsY, 1);
 
-        Graphics.Blit(_target, destination, _addMaterial);
+        Graphics.Blit(_target, _converged, _addMaterial);
+        Graphics.Blit(_converged, destination);
         _currentSample++;
     }
 
@@ -135,10 +138,16 @@ public class RayTracingMaster : MonoBehaviour
         //Release render texture if we already have one
         if (_target != null)
             _target.Release();
+        if (_converged != null)
+            _converged.Release();
         
         //Get a render target for Raytracing
         _target = new RenderTexture(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
         _target.enableRandomWrite = true;
         _target.Create();
+
+        _converged = new RenderTexture(Screen.width, Screen.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
+        _converged.enableRandomWrite = true;
+        _converged.Create();
     }
 }
