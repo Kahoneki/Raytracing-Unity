@@ -105,6 +105,7 @@ public class RayTracingMaster : MonoBehaviour
         RayTracingShader.SetTexture(0, "_SkyboxTexture", _SkyboxTexture);
         RayTracingShader.SetVector("_PixelOffset", new Vector2(Random.value, Random.value));
         RayTracingShader.SetInt("_BounceLimit", bounceLimit);
+        RayTracingShader.SetFloat("_Seed", Random.value);
         
         Vector3 localLightForward = _directionalLight.transform.forward;
         RayTracingShader.SetVector("_DirectionalLight", new Vector4(localLightForward.x, localLightForward.y, localLightForward.z, _directionalLight.intensity));
