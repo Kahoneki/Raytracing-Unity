@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class RayTracingMaster : MonoBehaviour
 {
+    public int SphereSeed;
     public int bounceLimit;
 
     public ComputeShader RayTracingShader;
@@ -26,9 +27,9 @@ public class RayTracingMaster : MonoBehaviour
         public Vector3 specular;
     };
 
-    private Vector2 SphereRadiusRange = new Vector2(3.0f, 8.0f);
-    private uint SpheresMax = 20000;
-    private float SpherePlacementRadius = 500.0f;
+    private Vector2 SphereRadiusRange = new Vector2(5.0f, 30.0f);
+    private uint SpheresMax = 10000;
+    private float SpherePlacementRadius = 100.0f;
     private ComputeBuffer _sphereBuffer;
 
 
@@ -45,6 +46,9 @@ public class RayTracingMaster : MonoBehaviour
 
 
     private void SetUpScene() {
+
+        Random.InitState(SphereSeed);
+
         List<Sphere> spheres = new List<Sphere>();
 
         //Add a number of random spheres
