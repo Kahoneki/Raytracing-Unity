@@ -26,6 +26,19 @@ float rand() {
 }
 
 
+float3x3 GetTangentSpace(float3 normal) {
+    //Choose a helper vector for the cross product
+    float3 helper = float3(1,0,0);
+    if (abs(normal.x) > 0.99f)
+        helper = float3(0,0,1);
+    
+    //Generate vectors
+    float3 tangent = normalize(cross(normal,helper));
+    float3 binormal = normalize(cross(normal,tangent));
+    return float3x3(tangent,binormal,normal);
+}
+
+
 float3 SampleHemisphere(float3 normal) {
     //Uniformly sample hemisphere direction
     float cosTheta = rand();
@@ -38,16 +51,8 @@ float3 SampleHemisphere(float3 normal) {
 }
 
 
-float3x3 GetTangentSpace(float3 normal) {
-    //Choose a helper vector for the cross product
-    float3 helper = float3(1,0,0);
-    if (abs(normal.x) > 0.99f)
-        helper = float3(0,0,1);
-    
-    //Generate vectors
-    float3 tangent = normalize(cross(normal,helper));
-    float3 binormal = normalize(cross(normal,tangent));
-    return float3x3(tangent,binormal,normal);
+float sdot(float3 x, float3 y, float f=1.0f) {
+    return saturate(dot(x,y)*f);
 }
 
 
@@ -168,24 +173,16 @@ RayHit Trace(Ray ray) {
 
 
 float3 Shade(inout Ray ray, RayHit hit) {
-    if (hit.distance < 1.#INF) {
+    // if (hit.distance < 1.#INF) {
 
-        //Reset the ray origin to hitpoint and offset by a small amount (to prevent intersection with the same object it just hit)
-        ray.origin = hit.position + hit.normal * 0.001f;
-        ray.direction = reflect(ray.direction, hit.normal);
-        ray.energy *= hit.specular;
-
-        // Shadow test ray
-        Ray shadowRay = CreateRay(hit.position + hit.normal * 0.001f, -1 * _DirectionalLight.xyz);
-        RayHit shadowHit = Trace(shadowRay);
-        if (shadowHit.distance != 1.#INF)
-            return float3(0, 0, 0);
-
-        //Return a diffuse-shaded colour
-        return saturate(dot(hit.normal, _DirectionalLight.xyz) * -1) * _DirectionalLight.w * hit.albedo;
+    //     //Diffuse shading
+    //     ray.origin = hit.position + hit.normal * 0.001f;
+    //     ray.direction = SampleHemisphere(hit.normal);
+    //     ray.energy *= 2 * hit.albedo * sdot(hit.normal, ray.direction); //BRDF
+    //     return 0.0f;
         
-    }
-    else {
+    // }
+    // else {
         //Erase the ray's energy - the sky doesn't reflect anything
         ray.energy = 0.0f;
 
@@ -194,7 +191,7 @@ float3 Shade(inout Ray ray, RayHit hit) {
         float theta = acos(ray.direction.y) / -PI;
         float phi = atan2(ray.direction.x, -ray.direction.z) / -PI * 0.5f;
         return (_SkyboxTexture.SampleLevel(sampler_SkyboxTexture, float2(phi, theta), 0).xyz * 2); //Multiply by some constant to brighten up the scene (very janky)
-    }
+    // }
 }
 
 
