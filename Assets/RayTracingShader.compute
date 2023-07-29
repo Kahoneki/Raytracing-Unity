@@ -56,6 +56,12 @@ float sdot(float3 x, float3 y, float f=1.0f) {
 }
 
 
+float energy(float3 colour) {
+    //Averages colour channels
+    return dot(colour, 1.0f/3.0f);
+}
+
+
 struct Ray {
     float3 origin;
     float3 direction;
@@ -133,7 +139,7 @@ void IntersectGroundPlane(Ray ray, inout RayHit bestHit) {
         bestHit.position = ray.origin + t * ray.direction;
         bestHit.normal = float3(0,1,0);
         bestHit.albedo = float3(0.53f, 0.81f, 0.94f);
-        bestHit.specular = float3(0.2f, 0.2f, 0.2f);
+        bestHit.specular = float3(0.8f, 0.8f, 0.8f);
     }
 }
 
@@ -178,16 +184,40 @@ float3 Shade(inout Ray ray, RayHit hit) {
         //Diffuse shading
         // ray.origin = hit.position + hit.normal * 0.001f;
         // ray.direction = SampleHemisphere(hit.normal);
-        // ray.energy *= 2 * hit.albedo * sdot(hit.normal, ray.direction);
+        // ray.energy *= 2 * hit.albedo * sdot(hit.normal, ray.direction); //BRDF
 
         //Phong shading
-        ray.origin = hit.position + hit.normal * 0.001f;
-        float3 reflected = reflect(ray.direction, hit.normal);
-        ray.direction = SampleHemisphere(hit.normal);
-        float3 diffuse = 2 * min(1.0f - hit.specular, hit.albedo);
-        float alpha = 300.0f;
-        float3 specular = hit.specular * (alpha+2) * pow(sdot(ray.direction, reflected), alpha);
-        ray.energy *= (diffuse + specular) * sdot(hit.normal, ray.direction);
+        // ray.origin = hit.position + hit.normal * 0.001f;
+        // float3 reflected = reflect(ray.direction, hit.normal);
+        // ray.direction = SampleHemisphere(hit.normal);
+        // float3 diffuse = 2 * min(1.0f - hit.specular, hit.albedo);
+        // float alpha = 300.0f;
+        // float3 specular = hit.specular * (alpha+2) * pow(sdot(ray.direction, reflected), alpha);
+        // ray.energy *= (diffuse + specular) * sdot(hit.normal, ray.direction); //BRDF
+
+        //Split diffuse and specular
+        //Calculate chances of diffusse and specular reflection, weighted by the ratio of specular values to albedo values
+        hit.albedo = min(1.0f - hit.specular, hit.albedo);
+        float specChance = energy(hit.specular);
+        float diffChance = energy(hit.albedo);
+        float sum = specChance + diffChance;
+        specChance /= sum;
+        diffChance /= sum;
+
+        //Roulette-select the ray's path
+        float roulette = rand();
+        if (roulette < specChance) {
+            //Specular reflection
+            ray.origin = hit.position + hit.normal * 0.001f;
+            ray.direction = reflect(ray.direction, hit.normal);
+            ray.energy *= (1.0f / specChance) * hit.specular * sdot(hit.normal, ray.direction); //BRDF
+        }
+        else {
+            //Diffuse reflection
+            ray.origin = hit.position + hit.normal * 0.001f;
+            ray.direction = SampleHemisphere(hit.normal);
+            ray.energy *= (1.0f / diffChance) * 2 * hit.albedo * sdot(hit.normal, ray.direction); //BRDF
+        }
 
         return 0.0f;
         
