@@ -132,8 +132,8 @@ void IntersectGroundPlane(Ray ray, inout RayHit bestHit) {
         bestHit.distance = t;
         bestHit.position = ray.origin + t * ray.direction;
         bestHit.normal = float3(0,1,0);
-        bestHit.albedo = float3(0.02f, 0.02f, 0.02f);
-        bestHit.specular = float3(0.4f, 0.4f, 0.4f);
+        bestHit.albedo = float3(0.53f, 0.81f, 0.94f);
+        bestHit.specular = float3(0.2f, 0.2f, 0.2f);
     }
 }
 
@@ -173,16 +173,26 @@ RayHit Trace(Ray ray) {
 
 
 float3 Shade(inout Ray ray, RayHit hit) {
-    // if (hit.distance < 1.#INF) {
+    if (hit.distance < 1.#INF) {
 
-    //     //Diffuse shading
-    //     ray.origin = hit.position + hit.normal * 0.001f;
-    //     ray.direction = SampleHemisphere(hit.normal);
-    //     ray.energy *= 2 * hit.albedo * sdot(hit.normal, ray.direction); //BRDF
-    //     return 0.0f;
+        //Diffuse shading
+        // ray.origin = hit.position + hit.normal * 0.001f;
+        // ray.direction = SampleHemisphere(hit.normal);
+        // ray.energy *= 2 * hit.albedo * sdot(hit.normal, ray.direction);
+
+        //Phong shading
+        ray.origin = hit.position + hit.normal * 0.001f;
+        float3 reflected = reflect(ray.direction, hit.normal);
+        ray.direction = SampleHemisphere(hit.normal);
+        float3 diffuse = 2 * min(1.0f - hit.specular, hit.albedo);
+        float alpha = 300.0f;
+        float3 specular = hit.specular * (alpha+2) * pow(sdot(ray.direction, reflected), alpha);
+        ray.energy *= (diffuse + specular) * sdot(hit.normal, ray.direction);
+
+        return 0.0f;
         
-    // }
-    // else {
+    }
+    else {
         //Erase the ray's energy - the sky doesn't reflect anything
         ray.energy = 0.0f;
 
@@ -191,7 +201,7 @@ float3 Shade(inout Ray ray, RayHit hit) {
         float theta = acos(ray.direction.y) / -PI;
         float phi = atan2(ray.direction.x, -ray.direction.z) / -PI * 0.5f;
         return (_SkyboxTexture.SampleLevel(sampler_SkyboxTexture, float2(phi, theta), 0).xyz * 2); //Multiply by some constant to brighten up the scene (very janky)
-    // }
+    }
 }
 
 
