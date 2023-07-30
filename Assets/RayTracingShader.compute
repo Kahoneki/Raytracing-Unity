@@ -62,6 +62,11 @@ float energy(float3 colour) {
 }
 
 
+float SmoothnessToPhongAlpha(float s) {
+    return pow(1000.0f, s*s);
+}
+
+
 struct Ray {
     float3 origin;
     float3 direction;
@@ -83,6 +88,8 @@ struct RayHit {
     float3 normal;
     float3 albedo;
     float3 specular;
+    float smoothness;
+    float3 emission;
 };
 
 RayHit CreateRayHit() {
@@ -92,6 +99,8 @@ RayHit CreateRayHit() {
     hit.normal = float3(0.0f, 0.0f, 0.0f);
     hit.albedo = float3(0.0f, 0.0f, 0.0f);
     hit.specular = float3(0.0f, 0.0f, 0.0f);
+    hit.smoothness = 0;
+    hit.emission = float3(0.0f, 0.0f, 0.0f);
     return hit;
 }
 
@@ -101,17 +110,21 @@ struct Sphere {
     float radius;
     float3 albedo;
     float3 specular;
+    float smoothness;
+    float3 emission;
 };
 
 StructuredBuffer<Sphere> _Spheres;
 
 //Only used for testing purposes
-Sphere MakeSphere(float3 position, float radius, float3 albedo, float3 specular) {
+Sphere MakeSphere(float3 position, float radius, float3 albedo, float3 specular, float smoothness, float3 emission) {
     Sphere sphere;
     sphere.position = position;
     sphere.radius = radius;
     sphere.albedo = albedo;
     sphere.specular = specular;
+    sphere.smoothness = smoothness;
+    sphere.emission = emission;
     return sphere;
 }
 
@@ -138,8 +151,10 @@ void IntersectGroundPlane(Ray ray, inout RayHit bestHit) {
         bestHit.distance = t;
         bestHit.position = ray.origin + t * ray.direction;
         bestHit.normal = float3(0,1,0);
-        bestHit.albedo = float3(0.53f, 0.81f, 0.94f);
+        bestHit.albedo = float3(0.02f, 0.02f, 0.02f);
         bestHit.specular = float3(0.5f, 0.5f, 0.5f);
+        bestHit.smoothness = 0.8f;
+        bestHit.emission = float3(0.0f, 0.0f, 0.0f);
     }
 }
 
@@ -160,6 +175,8 @@ void IntersectSphere(Ray ray, inout RayHit bestHit, Sphere sphere) {
         bestHit.normal = normalize(bestHit.position - sphere.position);
         bestHit.albedo = sphere.albedo;
         bestHit.specular = sphere.specular;
+        bestHit.smoothness = sphere.smoothness;
+        bestHit.emission = sphere.emission;
     }
 }
 
@@ -194,7 +211,7 @@ float3 Shade(inout Ray ray, RayHit hit) {
         float roulette = rand();
         if (roulette < specChance) {
             //Specular reflection
-            float alpha = 300.0f;
+            float alpha = SmoothnessToPhongAlpha(hit.smoothness);
             ray.origin = hit.position + hit.normal * 0.001f;
             ray.direction = SampleHemisphere(reflect(ray.direction, hit.normal), alpha);
             float f = (alpha + 2) / (alpha + 1);
@@ -207,7 +224,7 @@ float3 Shade(inout Ray ray, RayHit hit) {
             ray.energy *= (1.0f / diffChance) * hit.albedo; //BRDF
         }
 
-        return 0.0f;
+        return hit.emission;
         
     }
     else {
@@ -218,7 +235,7 @@ float3 Shade(inout Ray ray, RayHit hit) {
         //Converting cartesian direction vector to spherical coordinates
         float theta = acos(ray.direction.y) / -PI;
         float phi = atan2(ray.direction.x, -ray.direction.z) / -PI * 0.5f;
-        return (_SkyboxTexture.SampleLevel(sampler_SkyboxTexture, float2(phi, theta), 0).xyz * 2); //Multiply by some constant to brighten up the scene (very janky)
+        return (_SkyboxTexture.SampleLevel(sampler_SkyboxTexture, float2(phi, theta), 0).xyz * 0.7); //Multiply by some constant to brighten up the scene (very janky)
     }
 }
 

@@ -25,11 +25,13 @@ public class RayTracingMaster : MonoBehaviour
         public float radius;
         public Vector3 albedo;
         public Vector3 specular;
+        public float smoothness;
+        public Vector3 emission;
     };
 
     private Vector2 SphereRadiusRange = new Vector2(5.0f, 30.0f);
-    private uint SpheresMax = 10000;
-    private float SpherePlacementRadius = 100.0f;
+    private uint SpheresMax = 800;
+    private float SpherePlacementRadius = 300.0f;
     private ComputeBuffer _sphereBuffer;
 
 
@@ -69,11 +71,15 @@ public class RayTracingMaster : MonoBehaviour
                     goto SkipSphere;
             }
 
-            //Randomise sphere albedo and specular
+            //Randomise sphere albedo, specular, smoothness, and emission
             Color colour = Random.ColorHSV();
-            bool metal = Random.value < 0.5f;
+            Color emissionColour = Random.ColorHSV(0, 1, 0, 1, 3f, 7f);
+            bool metal = Random.value < 0.75f;
+            bool emissive = Random.value < 0.30f;
             sphere.albedo = metal ? Vector3.zero : new Vector3(colour.r, colour.g, colour.b);
             sphere.specular = metal ? new Vector3(colour.r, colour.g, colour.b) : Vector3.one * 0.02f;
+            sphere.smoothness = Random.Range(0.3f,0.6f);
+            sphere.emission = emissive ? new Vector3(emissionColour.r, emissionColour.g, emissionColour.b) : Vector3.zero;
 
             spheres.Add(sphere);
 
@@ -82,7 +88,7 @@ public class RayTracingMaster : MonoBehaviour
         }
 
         //Assign compute buffer data
-        _sphereBuffer = new ComputeBuffer(spheres.Count, 40);
+        _sphereBuffer = new ComputeBuffer(spheres.Count, 56);
         _sphereBuffer.SetData(spheres);
     }
 
