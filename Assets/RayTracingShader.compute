@@ -151,9 +151,9 @@ void IntersectGroundPlane(Ray ray, inout RayHit bestHit) {
         bestHit.distance = t;
         bestHit.position = ray.origin + t * ray.direction;
         bestHit.normal = float3(0,1,0);
-        bestHit.albedo = float3(0.02f, 0.02f, 0.02f);
-        bestHit.specular = float3(0.5f, 0.5f, 0.5f);
-        bestHit.smoothness = 0.8f;
+        bestHit.albedo = float3(1.0f, 1.0f, 1.0f);
+        bestHit.specular = float3(0.0f, 0.0f, 0.0f);
+        bestHit.smoothness = 0.2f;
         bestHit.emission = float3(0.0f, 0.0f, 0.0f);
     }
 }
@@ -235,7 +235,7 @@ float3 Shade(inout Ray ray, RayHit hit) {
         //Converting cartesian direction vector to spherical coordinates
         float theta = acos(ray.direction.y) / -PI;
         float phi = atan2(ray.direction.x, -ray.direction.z) / -PI * 0.5f;
-        return (_SkyboxTexture.SampleLevel(sampler_SkyboxTexture, float2(phi, theta), 0).xyz * 0.7); //Multiply by some constant to brighten up the scene (very janky)
+        return (_SkyboxTexture.SampleLevel(sampler_SkyboxTexture, float2(phi, theta), 0).xyz * 0.01); //Multiply by some constant to brighten up the scene (very janky)
     }
 }
 

@@ -312,8 +312,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b89dfba30735e7f4dbbb0179047f1dee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SphereSeed: 1223832718
-  bounceLimit: 100
+  SphereSeed: 1222979822
+  bounceLimit: 10
   RayTracingShader: {fileID: 7200000, guid: c9db1b761b5edc14fb88a8972f29efc4, type: 3}
   _SkyboxTexture: {fileID: 2800000, guid: 80e8611ce2bfbba459df06d9060fb86e, type: 3}
   _directionalLight: {fileID: 705507994}

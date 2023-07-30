@@ -75,7 +75,7 @@ public class RayTracingMaster : MonoBehaviour
             Color colour = Random.ColorHSV();
             Color emissionColour = Random.ColorHSV(0, 1, 0, 1, 3f, 7f);
             bool metal = Random.value < 0.75f;
-            bool emissive = Random.value < 0.30f;
+            bool emissive = Random.value < 1.0f;
             sphere.albedo = metal ? Vector3.zero : new Vector3(colour.r, colour.g, colour.b);
             sphere.specular = metal ? new Vector3(colour.r, colour.g, colour.b) : Vector3.one * 0.02f;
             sphere.smoothness = Random.Range(0.3f,0.6f);
