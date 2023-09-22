@@ -3,9 +3,24 @@ using UnityEngine;
 
 public class RayTracingMaster : MonoBehaviour
 {
+
+    [Header("User Config")]
     public int SphereSeed;
     public int bounceLimit;
+    public float hueMin;
+    public float hueMax;
+    public float saturationMin;
+    public float saturationMax;
+    public float brightnessMin;
+    public float brightnessMax;
+    public float smoothnessMin;
+    public float smoothnessMax;
+    public float specularAmplitude;
+    public float metalChance;
+    public float emissiveChance;
 
+
+    [Header("Components")]
     public ComputeShader RayTracingShader;
     private RenderTexture _target;
 
@@ -18,7 +33,6 @@ public class RayTracingMaster : MonoBehaviour
     public Light _directionalLight;
 
     private RenderTexture _converged;
-
 
     struct Sphere {
         public Vector3 position;
@@ -73,12 +87,12 @@ public class RayTracingMaster : MonoBehaviour
 
             //Randomise sphere albedo, specular, smoothness, and emission
             Color colour = Random.ColorHSV();
-            Color emissionColour = Random.ColorHSV(0, 1, 0, 1, 3f, 7f);
-            bool metal = Random.value < 0.75f;
-            bool emissive = Random.value < 1.0f;
+            Color emissionColour = Random.ColorHSV(hueMin, hueMax, saturationMin, saturationMax, brightnessMin, brightnessMax);
+            bool metal = Random.value <= metalChance;
+            bool emissive = Random.value <= emissiveChance;
             sphere.albedo = metal ? Vector3.zero : new Vector3(colour.r, colour.g, colour.b);
-            sphere.specular = metal ? new Vector3(colour.r, colour.g, colour.b) : Vector3.one * 0.02f;
-            sphere.smoothness = Random.Range(0.3f,0.6f);
+            sphere.specular = metal ? new Vector3(colour.r, colour.g, colour.b) : Vector3.one * specularAmplitude;
+            sphere.smoothness = Random.Range(smoothnessMin, smoothnessMax);
             sphere.emission = emissive ? new Vector3(emissionColour.r, emissionColour.g, emissionColour.b) : Vector3.zero;
 
             spheres.Add(sphere);

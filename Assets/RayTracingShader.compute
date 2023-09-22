@@ -235,7 +235,7 @@ float3 Shade(inout Ray ray, RayHit hit) {
         //Converting cartesian direction vector to spherical coordinates
         float theta = acos(ray.direction.y) / -PI;
         float phi = atan2(ray.direction.x, -ray.direction.z) / -PI * 0.5f;
-        return (_SkyboxTexture.SampleLevel(sampler_SkyboxTexture, float2(phi, theta), 0).xyz * 0.01); //Multiply by some constant to brighten up the scene (very janky)
+        return (_SkyboxTexture.SampleLevel(sampler_SkyboxTexture, float2(phi, theta), 0).xyz * 0.01); //Multiply by some constant to brighten up / darken the scene (very janky)
     }
 }
 
